@@ -1,51 +1,156 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Dtos.AppointmentDtos;
 using WebApplication2.Entities;
+using WebApplication2.Results;
 
 namespace WebApplication2.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class AppointmentsController : ControllerBase
+    [ApiController]
+    public class AppoinmentController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly ILogger<AppoinmentController> _logger;
+        private readonly IMapper _mapper;
 
-        public AppointmentsController(ApplicationDbContext dbContext)
+        public AppoinmentController(ApplicationDbContext dbContext, ILogger<AppoinmentController> logger, IMapper mapper)
         {
             _dbContext = dbContext;
+            _logger = logger;
+            _mapper = mapper;
         }
 
         [HttpGet]
         [Route("Get All Appointments")]
-        public async Task<IActionResult> GetAllAppointments()
+        public async Task<IActionResult> GetAllAppointments(int pageSize, string? searchTerm, int pageNumber = 1)
         {
-            var appointments = await _dbContext.Appointments.ToListAsync();
-            return Ok(appointments);
+            var totalCounts = 0;
+            var message = "getting all appointments";
+
+            var searchedResult = _dbContext.Appointments
+                .AsQueryable();
+
+
+            if (searchTerm is not null)
+            {
+                if (int.TryParse(searchTerm, out int id))
+                {
+                    searchedResult = _dbContext.Appointments.Where(a =>
+                    a.PatientId == id || a.DoctorId == id);
+                }
+                else if (DateTime.TryParse(searchTerm, out DateTime date))
+                {
+                    searchedResult = _dbContext.Appointments.Where(d => d.AppointmentDate == date);
+                }
+                else
+                {
+                    return BadRequest("Invalid Search Term!");
+                }
+            }
+
+            totalCounts = await searchedResult.CountAsync();
+
+            var appointments = await searchedResult
+                .OrderBy(a => a.AppointmentDate)
+                .ThenBy(a => a.PatientId)
+                .ThenBy(a => a.DoctorId)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            _logger.LogInformation(message, appointments);
+
+            var appointmentsResult = _mapper.Map<List<Appointment>, List<GetAppointmentsResponse>>(appointments);
+
+            var paginatedResult = new PaginatedList<GetAppointmentsResponse>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalCounts,
+                Totalpage = (int)Math.Ceiling(totalCounts / (double)pageSize),
+                Data = appointmentsResult
+            };
+
+            return Ok(GenericResult<PaginatedList<GetAppointmentsResponse>>
+            .Success(paginatedResult));
+
         }
 
         [HttpGet]
-        [Route("GetAllAppointmentsByPatientId/{patientid}")]
-        public async Task<IActionResult> GetPatientAppointments(int patientid)
+        [Route("GetAllAppointmentsByPatientId/{patientId}")]
+        public async Task<IActionResult> GetPatientAppointments(int patientId, int pageSize, int pageNumber = 1)
         {
-            var appointments = await _dbContext.Set<Appointment>()
-                .Where(a => a.PatientId == patientid)
+            var totalCounts = 0;
+            var message = "Getting all appointments for patient by patient id";
+
+            if (pageSize < 1)
+            {
+                return BadRequest("Page number and page size must be greater than 0.");
+            }
+
+            var appointments = await _dbContext.Appointments
+                .Where(p => p.PatientId == patientId)
+                .OrderBy(a => a.AppointmentDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(appointments);
+            totalCounts = await _dbContext.Appointments.CountAsync(p => p.PatientId == patientId);
+
+            _logger.LogInformation(message, appointments);
+
+            var patientAppointmentsResponse = _mapper.Map<List<Appointment>, List<GetAppointmentsResponse>>(appointments);
+
+            var paginatedResponse = new PaginatedList<GetAppointmentsResponse>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalCounts,
+                Totalpage = (int)Math.Ceiling(totalCounts / (double)pageSize),
+                Data = patientAppointmentsResponse
+            };
+
+            return Ok(GenericResult<PaginatedList<GetAppointmentsResponse>>.Success(paginatedResponse));
         }
-        
-        
+
         [HttpGet]
-        [Route("GetAllAppointmentsByDoctorId/{patientid}")]
-        public async Task<IActionResult> GetDoctorAppointments(int doctorId)
+        [Route("GetAllAppointmentsByDoctorId/{doctorId}")]
+        public async Task<IActionResult> GetDoctorAppointments(int doctorId, int pageSize, int pageNumber = 1)
         {
-            var appointments = await _dbContext.Set<Appointment>()
-                .Where(a => a.DoctorId == doctorId)
+            var totalCounts = 0;
+            var message = "getting all appointments for the doctor by doctor id";
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest("Page number and page size must be greater than 0.");
+            }
+
+            var appointments = await _dbContext.Appointments
+                .Where(p => p.DoctorId == doctorId)
+                .OrderBy(a => a.AppointmentDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(appointments);
+            totalCounts = await _dbContext.Appointments.CountAsync(d => d.DoctorId == doctorId);
+
+            _logger.LogInformation(message, appointments);
+
+            var doctorAppointmentsResponses = _mapper.Map<List<Appointment>, List<GetAppointmentsResponse>>(appointments);
+
+            var paginatedResponse = new PaginatedList<GetAppointmentsResponse>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalCounts,
+                Totalpage = (int)Math.Ceiling(totalCounts / (double)pageSize),
+                Data = doctorAppointmentsResponses
+            };
+
+            return Ok(GenericResult<PaginatedList<GetAppointmentsResponse>>.Success(paginatedResponse));
         }
 
         [HttpPost]

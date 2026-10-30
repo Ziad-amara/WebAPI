@@ -1,9 +1,11 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Dtos.DoctorDtos;
 using WebApplication2.Entities;
+using WebApplication2.Results;
 
 namespace WebApplication1.Controllers
 {
@@ -12,17 +14,59 @@ namespace WebApplication1.Controllers
     public class DoctorController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;
-        public DoctorController(ApplicationDbContext context)
+        private readonly ILogger _logger;
+        private readonly IMapper _mapper;
+
+        public DoctorController(ApplicationDbContext context, ILogger<DoctorController> logger, IMapper mapper)
         {
             _dbContext = context;
+            _logger = logger;
+            _mapper = mapper;
         }
 
         [HttpGet]
         [Route("GetAllDoctors")]
-        public async Task<IActionResult> GetAllDoctors()
+        public async Task<IActionResult> GetAllDoctors(int pageSize, string? searchTerm, int pageNumber = 1)
         {
-            var doctors = await _dbContext.Doctors.ToListAsync();
-            return Ok(doctors);
+            List<Doctor> doctors;
+            var totalCounts = 0;
+            var message = "Get All Doctors EndPoint";
+
+            if (searchTerm is not null)
+            {
+                doctors = _dbContext.Set<Doctor>()
+                    .Where(d => d.Name.Contains(searchTerm))
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                totalCounts = await _dbContext.Doctors.CountAsync(d => d.Name.Contains(searchTerm));
+            }
+            else
+            {
+                doctors = _dbContext.Set<Doctor>()
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                totalCounts = await _dbContext.Doctors.CountAsync();
+
+            }
+
+            _logger.LogInformation(message, doctors);
+
+            var doctorsResponse = _mapper.Map<List<Doctor>, List<GetDoctorResponse>>(doctors);
+
+            var paginatedResponse = new PaginatedList<GetDoctorResponse>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalCounts,
+                Totalpage = (int)Math.Ceiling(totalCounts / (double)pageSize),
+                Data = doctorsResponse
+            };
+
+            return Ok(GenericResult<PaginatedList<GetDoctorResponse>>.Success(paginatedResponse));
         }
 
         [HttpGet]
@@ -36,7 +80,9 @@ namespace WebApplication1.Controllers
                 return NotFound(new { Message = "Doctor not found" });
 
             }
-            return Ok(doctor);
+
+            var response = _mapper.Map<GetDoctorResponse>(doctor);
+            return Ok(response);
         }
 
         [HttpPost]

@@ -9,6 +9,8 @@ namespace WebApplication2.Helper
         public DoctorProfile()
         {
             CreateMap<Doctor, GetDoctorResponse>();
+            CreateMap<AddDoctorRequest, Doctor>();
+            CreateMap<UpdateDoctorRequest, Doctor>();
         }
     }
 }

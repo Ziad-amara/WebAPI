@@ -23,6 +23,8 @@ namespace WebApplication2.Data.Configurations
                 .WithMany(d => d.Appointments)
                 .HasForeignKey(a => a.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasQueryFilter(p => !p.IsDeleted);
         }
     
     }

@@ -17,6 +17,9 @@ namespace WebApplication2.Data.Configurations
             builder.Property(p => p.DateOfBirth)
                 .IsRequired()
                 .HasColumnType("date");
+
+            builder.HasQueryFilter(p => !p.IsDeleted);
+
         }
     }
 }

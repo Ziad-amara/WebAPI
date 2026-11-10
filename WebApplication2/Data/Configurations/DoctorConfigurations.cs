@@ -16,6 +16,9 @@ namespace WebApplication2.Data.Configurations
             builder.Property(d => d.Specialization)
                 .IsRequired()
                 .HasMaxLength(100);
+
+            builder.HasQueryFilter(p => !p.IsDeleted);
+
         }
     }
 }

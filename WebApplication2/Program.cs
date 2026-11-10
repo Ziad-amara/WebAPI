@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
+using WebApplication2.Extensions;
 
 namespace WebApplication2
 {
@@ -12,14 +13,8 @@ namespace WebApplication2
             // Add services to the container.
 
             builder.Services.AddControllers();
-            
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
 
-            // Register DbContext as a scoped service in inversion of control (Ioc)
-            builder.Services.AddDbContext<ApplicationDbContext>(options => options
-                            .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddServices(builder.Configuration);
 
             var app = builder.Build();
 

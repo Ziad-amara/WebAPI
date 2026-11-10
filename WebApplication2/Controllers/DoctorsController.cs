@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Dtos.DoctorDtos;
+using WebApplication2.Dtos.PatientDtos;
 using WebApplication2.Entities;
+using WebApplication2.Repository.Interfaces;
 using WebApplication2.Results;
+using WebApplication2.Services;
+using WebApplication2.Services.Interfaces;
 
 namespace WebApplication1.Controllers
 {
@@ -13,126 +17,87 @@ namespace WebApplication1.Controllers
     [ApiController]
     public class DoctorController : ControllerBase
     {
-        private readonly ApplicationDbContext _dbContext;
+        private readonly IDoctorServices _service;
         private readonly ILogger _logger;
-        private readonly IMapper _mapper;
 
-        public DoctorController(ApplicationDbContext context, ILogger<DoctorController> logger, IMapper mapper)
+        public DoctorController(IDoctorServices service, ILogger<DoctorController> logger)
         {
-            _dbContext = context;
+            _service = service;
             _logger = logger;
-            _mapper = mapper;
+        }
+
+        [HttpGet]
+        [Route("GetAllDoctorsWithoutPagination")]
+        public async Task<IActionResult> GetAllWithoutPagination()
+        {
+            var doctors = await _service.GetAllAsync();
+
+            return Ok(doctors);
         }
 
         [HttpGet]
         [Route("GetAllDoctors")]
         public async Task<IActionResult> GetAllDoctors(int pageSize, string? searchTerm, int pageNumber = 1)
         {
-            List<Doctor> doctors;
-            var totalCounts = 0;
-            var message = "Get All Doctors EndPoint";
+            var doctors = await _service.GetAllAsync(pageSize, searchTerm, pageNumber);
 
-            if (searchTerm is not null)
-            {
-                doctors = _dbContext.Set<Doctor>()
-                    .Where(d => d.Name.Contains(searchTerm))
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                totalCounts = await _dbContext.Doctors.CountAsync(d => d.Name.Contains(searchTerm));
-            }
-            else
-            {
-                doctors = _dbContext.Set<Doctor>()
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                totalCounts = await _dbContext.Doctors.CountAsync();
-
-            }
-
-            _logger.LogInformation(message, doctors);
-
-            var doctorsResponse = _mapper.Map<List<Doctor>, List<GetDoctorResponse>>(doctors);
-
-            var paginatedResponse = new PaginatedList<GetDoctorResponse>
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalRecords = totalCounts,
-                Totalpage = (int)Math.Ceiling(totalCounts / (double)pageSize),
-                Data = doctorsResponse
-            };
-
-            return Ok(GenericResult<PaginatedList<GetDoctorResponse>>.Success(paginatedResponse));
+            return Ok(doctors);
         }
 
         [HttpGet]
         [Route("GetDoctorById/{id}")]
         public async Task<IActionResult> GetDoctorById(int id)
         {
-            var doctor = await _dbContext.Doctors.FindAsync(id);
+            var result = await _service.GetByIdAsync(id);
 
-            if (doctor == null)
-            {
-                return NotFound(new { Message = "Doctor not found" });
+            if (result.IsFailure)
+                return FailureResponse(result);
 
-            }
-
-            var response = _mapper.Map<GetDoctorResponse>(doctor);
-            return Ok(response);
+            return Ok(result.Value);
         }
 
         [HttpPost]
         [Route("AddDoctor")]
         public async Task<IActionResult> AddDoctor(AddDoctorRequest addDoctor)
         {
-            var doctor = new Doctor
-            {
-                Name = addDoctor.Name,
-                Specialization = addDoctor.Specialization
-            };
-            await _dbContext.Doctors.AddAsync(doctor);
-            await _dbContext.SaveChangesAsync();
-            return Ok(new { Message = "Doctor added successfully", DoctorId = doctor.Id });
+            var result = await _service.CreateAsync(addDoctor);
+
+            if (result.IsFailure)
+                return FailureResponse(result);
+
+            return Ok(new { Message = "Doctor added successfully" });
+
         }
 
         [HttpPut]
         [Route("updateDoctor/{id}")]
         public async Task<IActionResult> UpdateDoctor(UpdateDoctorRequest updateDoctor)
         {
-            var Doctor = await _dbContext.FindAsync<Doctor>(updateDoctor.Id);
+            var result = await _service.UpdateAsync(updateDoctor);
 
-            if (Doctor == null)
-            {
-                return NotFound(new { Message = "Doctor not found" });
-            }
+            if (result.IsFailure)
+                return FailureResponse(result);
 
-            Doctor.Name = updateDoctor.Name;
-            Doctor.Specialization = updateDoctor.Specialization;
-
-            return Ok(new { Message = "Doctor Updated Successfuly" });
+            return Ok(new { Message = "Doctor updated successfully" });
         }
 
         [HttpDelete]
-        [Route("DelteDoctor/{id}")]
+        [Route("DeleteDoctor/{id}")]
         public async Task<IActionResult> DeleteDoctor(int id)
         {
-            var doctor = await _dbContext.FindAsync<Doctor>(id);
+            var result = await _service.DeleteAsync(id);
 
-            if (doctor == null)
-            {
-                return NotFound(new { Message = "Doctor not found" });
-            }
-
-            _dbContext.Doctors.Remove(doctor);
-            await _dbContext.SaveChangesAsync();
+            if (result.IsFailure)
+                return FailureResponse(result);
 
             return Ok(new { Message = "Doctor deleted successfully" });
 
         }
+
+        private IActionResult FailureResponse(Result result)
+            => result.Error == ServiceErrors.DoctorNotFound
+                ? NotFound(new { Message = result.Error })
+                : BadRequest(new { Message = result.Error });
     }
 
 }

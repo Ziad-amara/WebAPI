@@ -2,7 +2,7 @@
 using WebApplication2.Dtos.AppointmentDtos;
 using WebApplication2.Entities;
 
-namespace WebApplication1.Helper
+namespace WebApplication2.Helper
 {
     public class AppointmentProfile : Profile
     {
@@ -10,7 +10,9 @@ namespace WebApplication1.Helper
         {
 
             CreateMap<Appointment, GetAppointmentsResponse>();
-                 
+            CreateMap<AddAppointmentRequest, Appointment>();
+            CreateMap<UpdateAppointmentRequest, Appointment>();
+
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace WebApplication2.Dtos.AppointmentDtos
 {
-    public class UpdateAppoinmentRequest
+    public class UpdateAppointmentRequest
     {
         [Required]
         public int? PatientId { get; set; }

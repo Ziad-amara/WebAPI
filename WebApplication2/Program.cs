@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Extensions;
+using WebApplication2.MiddleWares;
 
 namespace WebApplication2
 {
@@ -28,6 +29,14 @@ namespace WebApplication2
 
                 await StoreContextSeeding.SeedAsync(context);
             }
+
+            // Middlewares
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
+            app.UseMiddleware<RequestTimingiddleware>();
+
+            // Needs Authentication and Authorization to work properly
+            //app.UseMiddleware<RequestIdHeaderMiddleware>();
+            app.UseMiddleware<RateLimitingMiddleware>();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

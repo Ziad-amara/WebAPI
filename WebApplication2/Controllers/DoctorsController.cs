@@ -6,6 +6,7 @@ using WebApplication2.Data;
 using WebApplication2.Dtos.DoctorDtos;
 using WebApplication2.Dtos.PatientDtos;
 using WebApplication2.Entities;
+using WebApplication2.filters;
 using WebApplication2.Repository.Interfaces;
 using WebApplication2.Results;
 using WebApplication2.Services;
@@ -15,6 +16,8 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ServiceFilter(typeof(ExceptionhandlingFilter))]
+    [ServiceFilter(typeof(ActionExecutionLoggingFilter))]
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorServices _service;
@@ -28,6 +31,7 @@ namespace WebApplication1.Controllers
 
         [HttpGet]
         [Route("GetAllDoctorsWithoutPagination")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetAllWithoutPagination()
         {
             var doctors = await _service.GetAllAsync();
@@ -37,6 +41,7 @@ namespace WebApplication1.Controllers
 
         [HttpGet]
         [Route("GetAllDoctors")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetAllDoctors(int pageSize, string? searchTerm, int pageNumber = 1)
         {
             var doctors = await _service.GetAllAsync(pageSize, searchTerm, pageNumber);

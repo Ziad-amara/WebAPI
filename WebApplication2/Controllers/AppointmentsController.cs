@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication2.Dtos.AppointmentDtos;
+using WebApplication2.filters;
 using WebApplication2.Results;
 using WebApplication2.Services;
 using WebApplication2.Services.Interfaces;
@@ -9,6 +10,8 @@ namespace WebApplication2.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ServiceFilter(typeof(ExceptionhandlingFilter))]
+    [ServiceFilter(typeof(ActionExecutionLoggingFilter))]
     public class AppoinmentController : ControllerBase
     {
         private readonly IAppointmentServices _service;
@@ -22,6 +25,7 @@ namespace WebApplication2.Controllers
 
         [HttpGet]
         [Route("GetAllAppointments")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetAllAppointments(int pageSize, string? searchTerm, int pageNumber = 1)
         {
             if (pageNumber < 1 || pageSize < 1)
@@ -39,6 +43,7 @@ namespace WebApplication2.Controllers
 
         [HttpGet]
         [Route("GetAllAppointmentsByPatientId/{patientId}")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetPatientAppointments(int patientId, int pageSize, int pageNumber = 1)
         {
             if (pageNumber < 1 || pageSize < 1)
@@ -54,6 +59,7 @@ namespace WebApplication2.Controllers
 
         [HttpGet]
         [Route("GetAllAppointmentsByDoctorId/{doctorId}")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetDoctorAppointments(int doctorId, int pageSize, int pageNumber = 1)
         {
             if (pageNumber < 1 || pageSize < 1)

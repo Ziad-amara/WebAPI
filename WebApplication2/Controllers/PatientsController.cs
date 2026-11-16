@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Dtos.PatientDtos;
 using WebApplication2.Entities;
+using WebApplication2.filters;
 using WebApplication2.Repository.Interfaces;
 using WebApplication2.Results;
 using WebApplication2.Services;
@@ -14,6 +15,8 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ServiceFilter(typeof(ExceptionhandlingFilter))]
+    [ServiceFilter(typeof(ActionExecutionLoggingFilter))]
     public class PatientController : ControllerBase
     {
         private readonly IpatientServices _service;
@@ -27,6 +30,7 @@ namespace WebApplication1.Controllers
 
         [HttpGet]
         [Route("GetAllPatients")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetAll(int pageSize, string? searchTerm, int pageNumber = 1)
         {
             var result = await _service.GetAllAsync(pageSize, searchTerm, pageNumber);
@@ -36,6 +40,7 @@ namespace WebApplication1.Controllers
 
         [HttpGet]
         [Route("GetAllPatientsWithoutPagination")]
+        [ServiceFilter(typeof(ActionTimingFilter))]
         public async Task<IActionResult> GetAllWithoutPagination()
         {
             var result = await _service.GetAllAsync();

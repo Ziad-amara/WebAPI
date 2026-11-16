@@ -15,7 +15,7 @@ namespace WebApplication2.Repository.Interfaces
 
         Task<bool> AddAppointment(AddAppointmentRequest request);
 
-        Task<bool> UpdateAppointment(UpdateAppoinmentRequest request,int patientId,int doctorId,DateTime appointmentDate);
+        Task<bool> UpdateAppointment(UpdateAppointmentRequest request,int patientId,int doctorId,DateTime appointmentDate);
 
         Task<bool> DeleteAppointment(int patientId, int doctorId,DateTime appointmentDate);
     }

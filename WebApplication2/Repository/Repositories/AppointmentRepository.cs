@@ -153,7 +153,7 @@ namespace WebApplication2.Repository.Repositories
             };
         }
 
-        public async Task<bool> UpdateAppointment(UpdateAppoinmentRequest request, int patientId, int doctorId, DateTime appointmentDate)
+        public async Task<bool> UpdateAppointment(UpdateAppointmentRequest request, int patientId, int doctorId, DateTime appointmentDate)
         {
             var appointment = await _dbContext.Appointments.FindAsync(patientId, doctorId, appointmentDate);
 

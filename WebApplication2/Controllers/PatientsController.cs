@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ namespace WebApplication1.Controllers
     [ApiController]
     [ServiceFilter(typeof(ExceptionhandlingFilter))]
     [ServiceFilter(typeof(ActionExecutionLoggingFilter))]
+    [Authorize]
     public class PatientController : ControllerBase
     {
         private readonly IpatientServices _service;

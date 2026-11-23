@@ -1,6 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using WebApplication1.Repositories;
 using WebApplication2.Data;
+using WebApplication2.Entities;
 using WebApplication2.filters;
 using WebApplication2.Helper;
 using WebApplication2.Interceptors;
@@ -80,6 +85,38 @@ namespace WebApplication2.Extensions
                 }));
             
 
+            // Authentication
+
+            services.AddDbContext<AuthenticationDbContext>(options =>
+            {
+                options.UseSqlServer(configuration.GetConnectionString("AuthenticationConnection"));
+            });
+
+            services.AddIdentity<ApplicationUser,IdentityRole>()
+                .AddEntityFrameworkStores<AuthenticationDbContext>()
+                .AddDefaultTokenProviders();
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = configuration["Jwt:Issuer"],
+                        ValidAudience = configuration["Jwt:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Secret Key is not configured.")))
+                    };
+                }
+                );
+
+            services.AddScoped<IJwtService, JwtServices>();
             return services;
 
         }

@@ -36,7 +36,7 @@ namespace WebApplication2
 
             // Needs Authentication and Authorization to work properly
             //app.UseMiddleware<RequestIdHeaderMiddleware>();
-            app.UseMiddleware<RateLimitingMiddleware>();
+            //app.UseMiddleware<RateLimitingMiddleware>();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

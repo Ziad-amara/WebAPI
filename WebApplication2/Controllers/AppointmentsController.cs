@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication2.Dtos.AppointmentDtos;
 using WebApplication2.filters;
@@ -12,6 +13,7 @@ namespace WebApplication2.Controllers
     [ApiController]
     [ServiceFilter(typeof(ExceptionhandlingFilter))]
     [ServiceFilter(typeof(ActionExecutionLoggingFilter))]
+    [Authorize]
     public class AppoinmentController : ControllerBase
     {
         private readonly IAppointmentServices _service;
